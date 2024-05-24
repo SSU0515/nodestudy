@@ -13,33 +13,54 @@ import api from "./utils/api";
 function App() {
   const [todoList, setTodoList] = useState([]);
   const [todoValue, setTodoValue] = useState("");
+
   const getTasks = async () => {
     const response = await api.get("/tasks");
-    console.log("rrr", response);
     setTodoList(response.data.data);
   };
-  const addTask = async () => {
+  useEffect(() => {
+    getTasks();
+  }, []);
+  const addTodo = async () => {
     try {
       const response = await api.post("/tasks", {
         task: todoValue,
         isComplete: false,
       });
       if (response.status === 200) {
-        console.log("success");
-        //입력한 값 사라지지않음
-        setTodoValue("");
-        //추가한 값이 안보임
         getTasks();
-      } else {
-        throw new Error("error");
       }
-    } catch (err) {
-      console.log("error", err);
+      setTodoValue("");
+    } catch (error) {
+      console.log("error:", error);
     }
   };
-  useEffect(() => {
-    getTasks();
-  }, []);
+
+  const deleteItem = async (id) => {
+    try {
+      console.log(id);
+      const response = await api.delete(`/tasks/${id}`);
+      if (response.status === 200) {
+        getTasks();
+      }
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+  const toggleComplete = async (id) => {
+    try {
+      const task = todoList.find((item) => item._id === id);
+      const response = await api.put(`/tasks/${id}`, {
+        isComplete: !task.isComplete,
+      });
+      if (response.status === 200) {
+        getTasks();
+      }
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
   return (
     <Container>
       <Row className="add-item-row">
@@ -47,19 +68,23 @@ function App() {
           <input
             type="text"
             placeholder="할일을 입력하세요"
+            onChange={(event) => setTodoValue(event.target.value)}
             className="input-box"
             value={todoValue}
-            onChange={(event) => setTodoValue(event.target.value)}
           />
         </Col>
         <Col xs={12} sm={2}>
-          <button className="button-add" onClick={addTask}>
+          <button onClick={addTodo} className="button-add">
             추가
           </button>
         </Col>
       </Row>
 
-      <TodoBoard todoList={todoList} />
+      <TodoBoard
+        todoList={todoList}
+        deleteItem={deleteItem}
+        toggleComplete={toggleComplete}
+      />
     </Container>
   );
 }
